@@ -1,9 +1,9 @@
 ﻿using IISLogParser;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.Configuration;
 using System.Linq;
 
 namespace LogScraper
@@ -18,10 +18,16 @@ namespace LogScraper
             string pathtowritecsv;
             string logFolderPath;
             string LiftMasterBrand = ConfigurationManager.AppSettings["LiftMaster"];
-           
+            var filters = new List<string>();
+
+            if (args.Length > 0)
+            {
+                filters = File.ReadAllText($@"..\..\{args[0]}").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            }
+
             if (LiftMasterBrand == "y")
             {
-                logFolderPath  = new FileInfo("..\\..\\Logs").FullName;
+                logFolderPath = new FileInfo("..\\..\\Logs").FullName;
                 pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\LiftMaster_logs.csv";
             }
             else
@@ -29,19 +35,18 @@ namespace LogScraper
                 logFolderPath = new FileInfo("..\\..\\ChamberlainLogs").FullName;
                 pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\Chamberlain_logs.csv";
             }
-            
-          
 
             //Read all files from Logs Folder
             var files = Directory.GetFiles(logFolderPath);
             var FinalLogInfoList = new List<LogInfo>();
-            foreach(var file in files) {
+            foreach (var file in files)
+            {
 
                 using (var parserEngine = new ParserEngine(file))
                 {
                     while (parserEngine.MissingRecords)
                     {
-                        FinalLogInfoList.AddRange(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo)));
+                        FinalLogInfoList.AddRange(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo), filters));
                         Console.WriteLine(FinalLogInfoList.Count);
                     }
                 }
@@ -54,10 +59,12 @@ namespace LogScraper
             Console.Read();
         }
 
-        private static IEnumerable<LogInfo> FilterList(IEnumerable<LogInfo> logsInfoList)
+        private static IEnumerable<LogInfo> FilterList(IEnumerable<LogInfo> logsInfoList, IReadOnlyCollection<string> filters)
         {
             return logsInfoList
-                .Where(_ => _.Status == 200 || _.Status == 404)
+                //TODO - include a report for 404's
+                .Where(_ => _.Status == 200)
+                .Where(_ => !filters.Any(filter => _.TargetUri.StartsWith(filter)))
                 .GroupBy(p => new { csReferer = p.Referer, csUriStem = p.TargetUri })
                 .Select(_ => new LogInfo { Referer = _.Key.csReferer, TargetUri = _.Key.csUriStem, Count = _.Count() })
                 .OrderByDescending(_ => _.Count);
