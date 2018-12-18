@@ -36,6 +36,7 @@
       <HintPath>packages\IISLogParser.1.1.0\lib\netstandard2.0\IISLogParser.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -54,6 +55,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="ChamberlainLogs\" />
     <Folder Include="Logs\" />
     <Folder Include="Output\" />
     <Folder Include="Properties\" />

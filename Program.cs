@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Configuration;
 using System.Linq;
 
 namespace LogScraper
@@ -14,8 +15,22 @@ namespace LogScraper
             var sw = Stopwatch.StartNew();
             Console.WriteLine("Welcome to Log Parser !");
 
-            string logFolderPath = new FileInfo("..\\..\\Logs").FullName;
-            string pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\logs.csv";
+            string pathtowritecsv;
+            string logFolderPath;
+            string LiftMasterBrand = ConfigurationManager.AppSettings["LiftMaster"];
+           
+            if (LiftMasterBrand == "y")
+            {
+                logFolderPath  = new FileInfo("..\\..\\Logs").FullName;
+                pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\LiftMaster_logs.csv";
+            }
+            else
+            {
+                logFolderPath = new FileInfo("..\\..\\ChamberlainLogs").FullName;
+                pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\Chamberlain_logs.csv";
+            }
+            
+          
 
             //Read all files from Logs Folder
             var files = Directory.GetFiles(logFolderPath);
@@ -27,6 +42,7 @@ namespace LogScraper
                     while (parserEngine.MissingRecords)
                     {
                         FinalLogInfoList.AddRange(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo)));
+                        Console.WriteLine(FinalLogInfoList.Count);
                     }
                 }
             }
