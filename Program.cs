@@ -13,16 +13,25 @@ namespace LogScraper
         {
             var sw = Stopwatch.StartNew();
             Console.WriteLine("Welcome to Log Parser !");
-            string path = "C:\\Projects\\CGI\\IISLogScraper\\u_ex181217.log";
-            string pathtowritecsv = "C:\\Projects\\CGI\\IISLogScraper\\test.csv";
 
-            using (var parserEngine = new ParserEngine(path))
-            {
-                while (parserEngine.MissingRecords)
+            string logFolderPath = new FileInfo("..\\..\\Logs").FullName;
+            string pathtowritecsv = new FileInfo("..\\..\\Output").FullName + "\\logs.csv";
+
+            //Read all files from Logs Folder
+            var files = Directory.GetFiles(logFolderPath);
+            var FinalLogInfoList = new List<LogInfo>();
+            foreach(var file in files) {
+
+                using (var parserEngine = new ParserEngine(file))
                 {
-                    WriteToCSV(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo)), pathtowritecsv);
+                    while (parserEngine.MissingRecords)
+                    {
+                        FinalLogInfoList.AddRange(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo)));
+                    }
                 }
             }
+
+            WriteToCSV(FinalLogInfoList, pathtowritecsv);
 
             Console.WriteLine($"Executed in {sw.ElapsedMilliseconds} ms");
             Console.WriteLine("Press any key to exit...");
