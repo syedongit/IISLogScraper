@@ -1,69 +1,57 @@
-﻿using System;
+﻿using IISLogParser;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IISLogParser;
+
 namespace LogScraper
 {
     class Program
     {
         static void Main(string[] args)
         {
+            var sw = Stopwatch.StartNew();
             Console.WriteLine("Welcome to Log Parser !");
-            string path = "D:\\CGI\\test\\u_ex181124.log";
-            string pathtowritecsv = "D:\\CGI\\test\\test.csv";
+            string path = "C:\\Projects\\CGI\\IISLogScraper\\u_ex181217.log";
+            string pathtowritecsv = "C:\\Projects\\CGI\\IISLogScraper\\test.csv";
 
-            List<IISLogEvent> logs = new List<IISLogEvent>();
-            using(ParserEngine parser = new ParserEngine(path))
+            using (var parserEngine = new ParserEngine(path))
             {
-                while (parser.MissingRecords)
+                while (parserEngine.MissingRecords)
                 {
-                    logs = parser.ParseLog().ToList();
-                    logs = logs.Where(p => p.scStatus == 200).Select(p => p).ToList();
-                    var logsInfoList = logs.Select(p => LogInfo.MapLogInfo(p)).ToList();
-                    logsInfoList = FilterList(logsInfoList);
-                
-                    WriteToCSV(logsInfoList, pathtowritecsv);
-                    //logs.ForEach(x=>Console.WriteLine(parser.CurrentFileRecord));
-                    
+                    WriteToCSV(FilterList(parserEngine.ParseLog().Select(LogInfo.MapLogInfo)), pathtowritecsv);
                 }
             }
 
+            Console.WriteLine($"Executed in {sw.ElapsedMilliseconds} ms");
+            Console.WriteLine("Press any key to exit...");
             Console.Read();
         }
 
-        private static List<LogInfo> FilterList(List<LogInfo> logsInfoList)
+        private static IEnumerable<LogInfo> FilterList(IEnumerable<LogInfo> logsInfoList)
         {
-            var returnlist = new List<LogInfo>();
-            var groupedreturnlist = logsInfoList.GroupBy(p => new LogGroupingKey(p.csReferer,p.csUriStem)).Select(p=>p).ToList();
-
-            foreach( var group in groupedreturnlist)
-            {
-                Console.WriteLine($"URL: {group.Key.csUriStem}, Referer: {group.Key.csUriStem}, Count: {group.Count()}");
-                //foreach(var value in group)
-                   // returnlist.Add(value);
-            }
-
-            return returnlist;
+            return logsInfoList
+                .Where(_ => _.Status == 200 || _.Status == 404)
+                .GroupBy(p => new { csReferer = p.Referer, csUriStem = p.TargetUri })
+                .Select(_ => new LogInfo { Referer = _.Key.csReferer, TargetUri = _.Key.csUriStem, Count = _.Count() })
+                .OrderByDescending(_ => _.Count);
         }
 
-        private static void WriteToCSV(List<LogInfo> logsInfo, string pathtowritecsv)
+        private static void WriteToCSV(IEnumerable<LogInfo> logsInfo, string pathtowritecsv)
         {
-            Type itemType = typeof(LogInfo);
-            var properties = itemType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).OrderBy(p => p.Name);
+            var itemType = typeof(LogInfo);
+            var properties = itemType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).OrderBy(p => p.Name).ToList();
             using (var writer = new StreamWriter(pathtowritecsv, true))
             {
                 //write the header line 
-                writer.WriteLine(string.Join(", ", properties.Select(p=>p.Name) ));
-                foreach(var log in logsInfo)
+                writer.WriteLine(string.Join(", ", properties.Select(p => p.Name)));
+                foreach (var log in logsInfo)
                 {
                     writer.WriteLine(string.Join(", ", properties.Select(p => p.GetValue(log))));
                 }
                 writer.Close();
             }
-
         }
     }
 }
