@@ -1,34 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IISLogParser;
+﻿using IISLogParser;
+
 namespace LogScraper
 {
     public class LogInfo
     {
 
-        public static LogInfo MapLogInfo(IISLogEvent iiSLogEvent) {
-
-
+        public static LogInfo MapLogInfo(IISLogEvent iiSLogEvent)
+        {
             return new LogInfo
             {
-                scStatus = iiSLogEvent.scStatus,
-                scSubstatus = iiSLogEvent.scSubstatus,
-                csReferer = iiSLogEvent.csReferer,
-                csUserAgent = iiSLogEvent.csUserAgent,
-                csUriStem  = iiSLogEvent.csUriStem
-
+                Status = iiSLogEvent.scStatus,
+                Referer = iiSLogEvent.csReferer,
+                UserAgent = iiSLogEvent.csUserAgent,
+                TargetUri  = iiSLogEvent.csUriStem
             };
         }
 
-        public int? scSubstatus { get; set; }
-        public int? scStatus { get; set; }
-
-        public string csReferer { get; set; }
-        public string csUserAgent { get; set; }
-        public string csUriStem { get; set; }
-
+        public int? Status { get; set; }
+        public string Referer { get; set; }
+        public string UserAgent { get; set; }
+        public string TargetUri { get; set; }
+        public int Count { get; set; }
     }
 }
